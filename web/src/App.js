@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import Home from "./Home";
 import Game from "./Game";
+import Match from "./Match";
 
 // Create browser router instance
 const router = createBrowserRouter([
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
     path: "/game",
     element: <Game />,
   },
+  {
+    path: "/match",
+    element: <Match />,
+  },
 ]);
 
 // App component
@@ -28,6 +33,7 @@ const App = () => (
       <h1>Welcome to the React Router App</h1>
       <Route path="/" element={<Home />} />
       <Route path="/game" element={<Game />} />
+      <Route path="/match" element={<Match />} />
     </div>
   </RouterProvider>
 );

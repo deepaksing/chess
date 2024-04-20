@@ -148,5 +148,22 @@ func main() {
 
 	})
 
+	e.POST("/get-status", func(c echo.Context) error {
+		fmt.Println("inside status")
+		var username UserResp
+		if err := c.Bind(&username); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+		}
+
+		status, err := dbConn.GetUserStatus(username.Username)
+		fmt.Println(status)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "status of given user not found, matching")
+		}
+
+		return c.JSON(http.StatusOK, status)
+
+	})
+
 	e.Start(":8080")
 }

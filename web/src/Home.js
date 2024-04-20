@@ -19,6 +19,7 @@ function Home() {
       // Assuming the response contains a success field indicating successful login
       if (response) {
         // Navigate to the /game route upon successful login
+        localStorage.setItem("username", username);
         navigate("/game");
       } else {
         // Handle unsuccessful login (e.g., display error message)
