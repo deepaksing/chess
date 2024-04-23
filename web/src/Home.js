@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -6,6 +6,9 @@ function Home() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [receivedMessage, setReceivedMessage] = useState("");
+  const [ws, setWs] = useState(null);
   const navigate = useNavigate(); // Hook to navigate programmatically
 
   const handleLogin = async (e) => {
@@ -30,6 +33,29 @@ function Home() {
     }
   };
 
+  useEffect(() => {
+    // Connect to WebSocket server
+    const socket = new WebSocket("ws://localhost:8080/match");
+    socket.onopen = () => {
+      console.log("WebSocket connected");
+    };
+
+    socket.onmessage = (event) => {
+      setReceivedMessage(event.data);
+    };
+
+    setWs(socket);
+
+    return () => {
+      socket.close();
+    };
+  }, []); // Empty dependency array ensures this effect runs only once
+
+  const sendMessage = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
+    }
+  };
   return (
     <div className="main">
       <div>

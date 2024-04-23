@@ -9,9 +9,20 @@ import (
 	"github.com/deepaksing/chess/server"
 	"github.com/deepaksing/chess/store/db"
 	"github.com/deepaksing/chess/types"
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/cors"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 )
 
 type User struct {
@@ -25,6 +36,10 @@ type UserResponse struct {
 
 type UserResp struct {
 	Username string `json:"username"`
+}
+
+type MathcResp struct {
+	Match_id int `json:"match_id"`
 }
 
 func CorsMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -163,6 +178,59 @@ func main() {
 
 		return c.JSON(http.StatusOK, status)
 
+	})
+
+	e.GET("/match", func(c echo.Context) error {
+		conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("error reading message", err)
+				break
+			}
+
+			if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				log.Println("Error echoing message:", err)
+				break
+			}
+		}
+
+		return nil
+	})
+
+	e.POST("/chess_board", func(c echo.Context) error {
+		var matchId MathcResp
+		fmt.Println("fetc 1")
+		if err := c.Bind(&matchId); err != nil {
+			fmt.Println(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+		}
+		fmt.Println("fetcn 2")
+		boardState, err := dbConn.GetBoardState(matchId.Match_id)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "status of given user not found, matching")
+		}
+
+		return c.JSON(http.StatusOK, boardState)
+	})
+
+	e.POST("/make_move", func(c echo.Context) error {
+		var move types.MoveResp
+		if err := c.Bind(&move); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+		}
+
+		//save the move
+		err := dbConn.SaveBoardMove(move)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "error")
+		}
+		return nil
 	})
 
 	e.Start(":8080")

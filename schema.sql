@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS match (
     end_time TIMESTAMP,
     status VARCHAR(20) DEFAULT 'active',
     winner_id INT,
+    chessboard_state INT[][],
+    move_ids INT[],
     CONSTRAINT check_players_different CHECK (white_player_username != black_player_username)
 );
 
@@ -27,7 +29,16 @@ CREATE TABLE IF NOT EXISTS queue (
 CREATE TABLE IF NOT EXISTS status (
     status_id SERIAL PRIMARY KEY,
     match_id INT REFERENCES "match"(match_id),
-    username VARCHAR(255) REFERENCES "User"(username),
+    username VARCHAR(255) NOT NULL REFERENCES "User"(username),
     opponent VARCHAR(255) REFERENCES "User"(username),
     isPlaying BOOLEAN
 );
+
+CREATE TABLE IF NOT EXISTS move (
+    move_id SERIAL PRIMARY KEY,
+    move_from VARCHAR(4) NOT NULL,
+    move_to VARCHAR(4) NOT NULL,
+    move_type INT,
+    player_username VARCHAR(255) NOT NULL REFERENCES "User"(username),
+    move_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)

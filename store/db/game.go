@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	"github.com/deepaksing/chess/store"
+	"github.com/deepaksing/chess/types"
 )
 
 type Status struct {
@@ -52,9 +55,16 @@ func (d *DB) MatchPlayers(username string) ([]string, error) {
 		return nil, err
 	}
 
+	chessboardState := store.NewChessBoard()
+	fmt.Println(chessboardState)
+	// chessboardStateJSON, err := json.Marshal(chessboardState)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	// Insert a new match record
 	var matchID int
-	err = tx.QueryRow("INSERT INTO Match (white_player_username, black_player_username) VALUES ($1, $2) RETURNING match_id", username, otherPlayerUsername).Scan(&matchID)
+	err = tx.QueryRow("INSERT INTO Match (white_player_username, black_player_username, chessboard_state) VALUES ($1, $2, $3) RETURNING match_id", username, otherPlayerUsername, chessboardState).Scan(&matchID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,4 +132,54 @@ func (d *DB) GetUserStatus(username string) ([]Status, error) {
 	}
 
 	return statuses, nil
+}
+
+func (d *DB) GetBoardState(match_id int) (string, error) {
+	fmt.Println("fetchnig board ")
+	var boardState string
+	err := d.db.QueryRow("SELECT chessboard_state FROM match WHERE match_id = $1", match_id).Scan(&boardState)
+	fmt.Println("board state", boardState)
+	if err != nil {
+		return "", err
+	}
+	return boardState, nil
+}
+
+func (d *DB) SaveBoardMove(Move types.MoveResp) error {
+	//save the move and get move_id
+	fmt.Println(Move)
+	var move_id int
+	err := d.db.QueryRow("INSERT INTO move (move_from, move_to, move_type, player_username) VALUES ($1, $2, $3, $4) RETURNING move_id", Move.Move_from, Move.Move_to, Move.Move_type, Move.Player_username).Scan(&move_id)
+
+	if err != nil {
+		return err
+	}
+
+	//save move_id in match table
+
+	res := d.db.QueryRow("UPDATE match SET move_ids = array_append(move_ids, $1) WHERE match_id = $2", move_id, Move.Match_id)
+	if res.Err() != nil {
+		return err
+	}
+	//update the board_state
+	//1. fetch board state
+	//2. modify the board and update
+
+	var board_state string
+	res = d.db.QueryRow("SELECT chessboard_state from match WHERE match_id=$1", Move.Match_id)
+	res.Scan(&board_state)
+
+	updatedBoard, err := store.UpdateBoardState(store.ConvertStringToChessboard(board_state), Move.Move_from, Move.Move_to, Move.Move_type)
+	if err != nil {
+		return err
+	}
+	fmt.Println(board_state)
+	fmt.Println(updatedBoard)
+
+	res = d.db.QueryRow("UPDATE match SET chessboard_state = $1 WHERE match_id = $2", store.ConvertChessboardToString(updatedBoard), Move.Match_id)
+	if res.Err() != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

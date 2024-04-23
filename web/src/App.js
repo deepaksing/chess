@@ -21,7 +21,7 @@ const router = createBrowserRouter([
     element: <Game />,
   },
   {
-    path: "/match",
+    path: "/match/:match_id",
     element: <Match />,
   },
 ]);
@@ -33,7 +33,7 @@ const App = () => (
       <h1>Welcome to the React Router App</h1>
       <Route path="/" element={<Home />} />
       <Route path="/game" element={<Game />} />
-      <Route path="/match" element={<Match />} />
+      <Route path="/match/:match_id" element={<Match />} />
     </div>
   </RouterProvider>
 );

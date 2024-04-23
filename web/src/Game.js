@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -6,15 +6,13 @@ function Game() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [fetchStatusInterval, setFetchStatusInterval] = useState(0);
+  const fetchIntervalRef = useRef(0);
   const [opponent, setOpponent] = useState("opponent");
   const [matchID, setMatchID] = useState(null);
 
-  useEffect(() => {
-    console.log(opponent);
-    console.log(fetchStatusInterval);
-    clearInterval(fetchStatusInterval);
-  }, [opponent]);
+  // useEffect(() => {
+  //   clearInterval(fetchStatusInterval);
+  // }, [opponent]);
 
   const getAnotherPlayer = async (username) => {
     try {
@@ -22,7 +20,6 @@ function Game() {
         username: username,
       });
       if (response) {
-        console.log(response);
         // navigate("/");
       } else {
       }
@@ -39,16 +36,12 @@ function Game() {
       // Assuming the response contains a success field indicating successful login
       if (response) {
         setLoading(false);
-        console.log(response);
         const isPlyaing = response.data[0].isplaying;
-        console.log(isPlyaing);
         if (isPlyaing) {
-          console.log(
-            response.data[0].opponent + " " + response.data[0].match_id
-          );
           setOpponent(response.data[0].opponent);
           setMatchID(response.data[0].match_id);
-          // navigate("/match");
+          clearInterval(fetchIntervalRef.current);
+          navigate(`/match/${response.data[0].match_id}`);
         }
       } else {
       }
@@ -57,29 +50,26 @@ function Game() {
     }
   };
 
+  console.log("opponent ", opponent);
+  console.log("mfetch interval 2 ", fetchIntervalRef.current);
+
   const joinGame = () => {
     const username = localStorage.getItem("username");
-    console.log(username);
     if (username) {
       setLoading(true);
       getAnotherPlayer(username);
-      const intervalId = setInterval(() => {
+      var intervalId = setInterval(() => {
         getStatus(username);
       }, 5000);
       // console.log(intervalId);
-      // setFetchStatusInterval(intervalId);
+      fetchIntervalRef.current = intervalId;
+      console.log("Fetch Interval ID:", intervalId);
     }
   };
 
   return (
     <div className="game">
-      {loading ? (
-        <div>Loading</div>
-      ) : (
-        <div>
-          {opponent} {fetchStatusInterval}
-        </div>
-      )}
+      {loading ? <div>Loading</div> : null}
       <h1>Chess Game</h1>
       <div>
         <div onClick={joinGame}>Join Game</div>
